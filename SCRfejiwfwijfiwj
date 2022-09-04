@@ -1,0 +1,718 @@
+--@region GUI
+local anti_aim_settings_tab = gui.Tab(gui.Reference("Ragebot"), "anti_aim_settings_tab", "Anti-Aim Settings Tab");
+
+--___________mode selector_____________--
+local anti_aim_mode_selector = gui.Groupbox(anti_aim_settings_tab, "Mode", 5, 10, 325, 450);
+
+local advanced_mode = gui.Checkbox(anti_aim_mode_selector, "advanced_mode", "Advanced Mode", false);
+--_____________________________________--
+
+
+--_________condition selector__________--
+local anti_aim_condition_selector = gui.Groupbox(anti_aim_settings_tab, "Condition", 5, 100, 325, 450);
+
+local condition_selector = gui.Combobox(anti_aim_condition_selector, "condition_selector", "Select Condition", "General", "Standing", "Ducking", "Slow Walking", "Moving", "In Air");
+--_____________________________________--
+
+
+--___________simple settings___________--
+local anti_aim_simple_settings = gui.Groupbox(anti_aim_settings_tab, "Simple Settings", 5, 100, 325, 350);
+
+local anti_aim_simple_settings_ui = {
+    desync_type = gui.Combobox(anti_aim_simple_settings, "desync_type", "Desync Type", "Default Desync", "Desync Jitter"),
+    desync_angle = gui.Combobox(anti_aim_simple_settings, "desync_angle", "Desync Angle", "Disabled", "Low", "Pred-Medium", "Medium", "Pred-High", "High", "Giant"),
+    jitter_angle = gui.Combobox(anti_aim_simple_settings, "desync_angle", "Jitter Angle", "Disabled", "Low", "Pred-Medium", "Medium", "Pred-High", "High", "Giant"),
+    yaw_angle = gui.Slider(anti_aim_simple_settings, "yaw_angle", "Yaw Angle", 0, -180, 180, 1)
+}
+--_____________________________________--
+
+
+--__________advanced settings___________--
+local anti_aim_advanced_settings = gui.Groupbox(anti_aim_settings_tab, "Advanced Settings", 5, 210, 325, 350);
+
+local anti_aim_elements = {};
+local anti_aim_names = {"general", "standing", "ducking", "slow_walking", "moving", "air"};
+
+local function createAntiAimGui()
+    if not anti_aim_elements[1] then
+        for element = 1, #anti_aim_names, 1 do
+            local element_varname = anti_aim_names[element]
+
+            --get name with first upper char, then gsub '_' to ' '
+            local element_name = string.gsub((string.upper(string.sub(anti_aim_names[element], 1, 1)) .. string.sub(anti_aim_names[element], 2)), "%_", ' ')
+
+            anti_aim_elements[element] = 
+            {
+                override_condition = gui.Checkbox(anti_aim_advanced_settings, "override_condition_" .. element_varname, "Override " .. element_name, false),
+
+                --desync
+                desync_type = gui.Combobox(anti_aim_advanced_settings, "desync_type_" .. element_varname, "Desync Type", "Default Desync", "Desync Jitter"),
+                desync_modifier = gui.Combobox(anti_aim_advanced_settings, "desync_modifier_" .. element_varname, "Desync Modifier", "Static", "Random", "Jitter", "Isolated Jitter"),
+                desync_range_right = gui.Slider(anti_aim_advanced_settings, "desync_range_right_" .. element_varname, "Desync Range Right", 0, 0, 58, 1),
+                desync_range_left = gui.Slider(anti_aim_advanced_settings, "desync_range_left_" .. element_varname, "Desync Range Left", 0, 0, 58, 1),
+
+                --yaw
+                yaw_angle_right = gui.Slider(anti_aim_advanced_settings, "yaw_angle_right_" .. element_varname, "Yaw Angle Right", 0, -180, 180, 1),
+                yaw_angle_left = gui.Slider(anti_aim_advanced_settings, "yaw_angle_left_" .. element_varname, "Yaw Angle Left", 0, -180, 180, 1),
+                yaw_modifier = gui.Combobox(anti_aim_advanced_settings, "yaw_modifier_" .. element_varname, "Yaw Modifier", "Static", "Center Jitter", "Offset Jitter", "Random Jitter", "Tank Jitter", "Random Tank Jitter", "Fake Flick"),
+                yaw_modifier_range = gui.Slider(anti_aim_advanced_settings, "yaw_modifier_range_" .. element_varname, "Yaw Modifier Range", 0, 0, 180, 1),
+                yaw_modifier_speed = gui.Slider(anti_aim_advanced_settings, "yaw_modifier_speed_" .. element_varname, "Yaw Modifier Speed", 2, 2, 64, 1)
+            }
+        end
+    end
+end
+--_____________________________________--
+
+
+--_________binds for anti-aims_________--
+local anti_aim_binds = gui.Groupbox(anti_aim_settings_tab, "Binds", 340, 10, 290, 350);
+
+local anti_aim_binds_ui = {
+    --inverter
+    desync_inverter = gui.Keybox(anti_aim_binds, "desync_inverter", "Desync Inverter", 70),
+
+    --manuals
+    manual_left = gui.Keybox(anti_aim_binds, "manual_left", "Manual Left", 90),
+    manual_back = gui.Keybox(anti_aim_binds, "manual_back", "Manual Back", 88),
+    manual_right = gui.Keybox(anti_aim_binds, "manual_right", "Manual Right", 67),
+    manual_forward = gui.Keybox(anti_aim_binds, "manual_forward", "Manual Forward", 38)
+};
+--_____________________________________--
+
+
+--___________other settings____________--
+local anti_aim_other = gui.Groupbox(anti_aim_settings_tab, "Other", 340, 345, 290, 350);
+
+local anti_aim_other_ui = {
+    --autodirection
+    at_targets = gui.Checkbox(anti_aim_other, "at_targets_enable", "At Targets", false),
+    at_edges = gui.Checkbox(anti_aim_other, "at_edges_enable", "At Edges", false),
+
+    --lby
+    disable_lby_on_exploits = gui.Checkbox(anti_aim_other, "disable_lby_on_exploits", "Disable LBY On Exploits", false),
+    lby_randomizer = gui.Checkbox(anti_aim_other, "lby_randomizer", "LBY Randomizer", false),
+
+    --legit anti-aim
+    legit_anti_aim = gui.Checkbox(anti_aim_other, "legit_anti_aim_enable", "Legit Anti-Aim", false),
+};
+--_____________________________________--
+
+
+--presets on bottom of the script
+local anti_aim_presets_tab = gui.Tab(gui.Reference("Ragebot"), "anti_aim_presets_tab", "Anti-Aim Presets Tab");
+
+--@endregion
+
+
+--@region GENERAL_FUCNTIONS
+local function getValue(variable)
+    if type(variable) == "number" then
+        return variable
+    elseif type(variable) == "string" then
+        return gui.GetValue(variable)
+    end
+
+    return variable:GetValue()
+end
+
+local function setValue(variable, value)
+    if type(variable) == "number" then
+        variable = value
+    elseif type(variable) == "string" then
+        gui.SetValue(variable, value)
+    else
+        variable:SetValue(value)
+    end
+end
+
+local function isButtonDown(button)
+    if type(button) == "number" then
+        return input.IsButtonDown(button)
+    end
+
+    local button_value = getValue(button)
+    if button_value ~= 0 then
+        return input.IsButtonDown(button_value)
+    end
+end
+
+local function isButtonPressed(button)
+    if type(button) == "number" then
+        return input.IsButtonPressed(button)
+    end
+
+    local button_value = getValue(button)
+    if button_value ~= 0 then
+        return input.IsButtonPressed(button_value)
+    end
+end
+--@endregion
+
+
+--@region USEFUL_VALUES
+--constant
+local TICK_TIME = 1 / 64;
+local FL_ONGROUND = bit.lshift(1, 0)
+local FL_DUCKING = bit.lshift(1, 1)
+local WEAPON_GROUP =    {pistol = {2, 3, 4, 30, 32, 36, 61, 63}, 
+                         sniper = {9}, 
+                         scout = {40}, 
+                         hpistol = {1, 64}, 
+                         smg = {17, 19, 23, 24, 26, 33, 34}, 
+                         rifle = {60, 7, 8, 10, 13, 16, 39}, 
+                         shotgun = {25, 27, 29, 35}, 
+                         asniper = {38, 11}, 
+                         lmg = {28, 14},
+                        }
+
+
+local local_entity;
+
+local function getWeaponGroup()
+    if not local_entity or not local_entity:IsAlive() then
+        return 
+    end
+
+    --get current weapon group
+    local current_weapon_group = "shared"
+
+    for group_name, group_weapons in pairs(WEAPON_GROUP) do
+        for weapon_id = 1, #group_weapons, 1 do
+
+            local local_weapon_id = local_entity:GetWeaponID()
+
+            if local_weapon_id == group_weapons[weapon_id] then
+                current_weapon_group = group_name
+            end
+        end
+    end
+
+    return current_weapon_group
+end
+
+local function isDoubleTapActive()
+    if getWeaponGroup() then
+        return getValue("rbot.accuracy.weapon." ..  getWeaponGroup()  .. ".doublefire") > 0
+    end
+end
+
+local function getAntiAimCondition()
+    if not local_entity or not local_entity:IsAlive() then
+        return 
+    end
+
+    --watching for m_flags
+    local m_flags = local_entity:GetProp("m_fFlags")
+
+    local in_air = ((bit.band(m_flags, FL_ONGROUND)) == 0)
+    local ducking = ((bit.band(m_flags, FL_DUCKING)) == 2)
+    ----------------------
+
+    local velocity = local_entity:GetPropVector("localdata", "m_vecVelocity[0]"):Length()
+
+    --get anti-aim condition
+    if (velocity <= 10) and not ducking and not in_air and getValue(anti_aim_elements[2].override_condition) then
+        return 2 --standing
+    elseif (ducking or isButtonDown("rbot.antiaim.extra.fakecrouchkey")) and not in_air and getValue(anti_aim_elements[3].override_condition) then
+        return 3 --ducking
+    elseif (velocity > 10) and isButtonDown("rbot.accuracy.movement.slowkey") and not ducking and not in_air and getValue(anti_aim_elements[4].override_condition) then
+        return 4 --slow walking
+    elseif (velocity > 10) and not isButtonDown("rbot.accuracy.movement.slowkey") and not ducking and not in_air and getValue(anti_aim_elements[5].override_condition) then
+        return 5 --moving
+    elseif in_air and getValue(anti_aim_elements[6].override_condition) then
+        return 6 --air
+    else
+        return 1 --general
+    end
+end
+
+--non constant
+local advanced_mode_enabled = false;
+local real_time = 0;
+local tick_count = 0;
+local jitter_switch_time = 0;
+local desync_switch_time = 0;
+
+local function handlers()
+    advanced_mode_enabled = getValue(advanced_mode)
+    real_time = globals.RealTime();
+    tick_count = globals.TickCount();
+    jitter_switch_time = isDoubleTapActive() and getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier_speed) or getValue("misc.fakelag.factor");
+    desync_switch_time = isDoubleTapActive() and 2 or getValue("misc.fakelag.factor")
+    local_entity = entities.GetLocalPlayer()
+end
+--@endregion
+
+
+--@region EDIT_GUI
+local function changeGui()
+
+    anti_aim_advanced_settings:SetInvisible(not advanced_mode_enabled)
+    anti_aim_condition_selector:SetInvisible(not advanced_mode_enabled)
+    anti_aim_simple_settings:SetInvisible(advanced_mode_enabled)
+
+    --make invisible not selected elements
+    for condition = 1, #anti_aim_elements, 1 do
+        for _, element in pairs(anti_aim_elements[condition]) do
+            if (getValue(condition_selector) + 1) then
+                element:SetInvisible((getValue(condition_selector) + 1) ~= condition)
+            end
+        end
+    end
+
+    anti_aim_elements[1].override_condition:SetInvisible(true)
+end
+--@endregion
+
+
+--@region ANTI_AIM_FUNCTIONS
+local function clampYaw(yaw)
+    while yaw > 180 do yaw = yaw - 360 end
+    while yaw < -180 do yaw = yaw + 360 end
+
+    return yaw
+end
+
+local desync_inverted = false
+local function invertDesync()
+    if isButtonPressed(anti_aim_binds_ui.desync_inverter) then
+        desync_inverted = not desync_inverted
+    end
+end
+--@endregion
+
+
+--@region YAW_MODIFIERS
+local static_yaw_time = 0;
+local jitter_side_swapper = 1;
+
+local jitter_yaw = 0;
+local random_yaw = 0;
+
+local function staticJitter()
+    if getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier) == 0 then
+        jitter_yaw = 0
+    end
+end
+
+local function centerJitter()
+    if getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier) == 1 then
+        if real_time - static_yaw_time >= (jitter_switch_time * TICK_TIME) then
+
+            jitter_yaw = (getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier_range) / 2) * jitter_side_swapper
+
+            jitter_side_swapper = -jitter_side_swapper   
+            static_yaw_time = real_time
+        end
+    end
+end
+
+local function offsetJitter()
+    if getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier) == 2 then
+        if real_time - static_yaw_time >= (jitter_switch_time * TICK_TIME) then
+
+            jitter_yaw = jitter_side_swapper > 0 and getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier_range) or 0
+
+            jitter_side_swapper = -jitter_side_swapper   
+            static_yaw_time = real_time
+        end
+    end
+end
+
+local function randomJitter()
+    if getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier) == 3 then
+        if real_time - static_yaw_time >= (jitter_switch_time * TICK_TIME) then
+
+            jitter_yaw = (math.random(0, getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier_range)) / 2) * jitter_side_swapper
+
+            jitter_side_swapper = -jitter_side_swapper   
+            static_yaw_time = real_time
+        end
+    end
+end
+
+local function tankJitter()
+    if getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier) == 4 then
+        if real_time - static_yaw_time >= (jitter_switch_time * TICK_TIME) then
+
+            jitter_yaw = ((getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier_range) + math.random(-12, 12)) / 2) * jitter_side_swapper
+
+            jitter_side_swapper = -jitter_side_swapper
+            static_yaw_time = real_time
+        end
+    end
+end
+
+local function randomTankJitter()
+    if getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier) == 5 then
+        if tick_count % 32 == 0 then
+            random_yaw = math.random(0, getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier_range)) / 2
+        end
+
+        if real_time - static_yaw_time >= (jitter_switch_time * TICK_TIME) then
+            jitter_yaw = (random_yaw + math.random(-6, 6)) * jitter_side_swapper
+
+            jitter_side_swapper = -jitter_side_swapper
+            static_yaw_time = real_time
+        end
+    end
+end
+
+local function fakeFlick()
+    if getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier) == 6 then
+        if real_time - static_yaw_time >= ((jitter_side_swapper > 0 and 1 or jitter_switch_time) * TICK_TIME) then
+            jitter_yaw = (jitter_side_swapper > 0 and 0 or (desync_inverted and 100 or -100))
+
+            jitter_side_swapper = -jitter_side_swapper
+            static_yaw_time = real_time
+        end
+    end
+end
+
+local function callJitterFunctions()
+    if advanced_mode_enabled then
+        staticJitter()
+        centerJitter();
+        offsetJitter();
+        randomJitter();
+        tankJitter();
+        randomTankJitter();
+        fakeFlick();
+    end
+end
+--@endregion
+
+
+--@region YAW_MANUALS
+local legit_yaw, manual_yaw, manual_right, manual_back, manual_left, manual_forward = 0, 0, false, false, false, false
+
+local manuals_keys = {anti_aim_binds_ui.manual_left, anti_aim_binds_ui.manual_back, anti_aim_binds_ui.manual_right, anti_aim_binds_ui.manual_forward};
+local manuals_values = {manual_left, manual_back, manual_right, manual_forward};
+local manual_yaw_values = {-90, 0, 90, 180};
+
+local function isManualActive()
+    local manual_active = false
+    local active_manual_number;
+
+    for manual = 1, #manuals_values, 1 do
+        if manuals_values[manual] then
+            manual_active = true
+            active_manual_number = manual
+        end
+    end
+
+    return {manual_active, active_manual_number}
+end
+
+local function manualAntiAims()
+    for manual = 1, #manuals_keys, 1 do
+        if isButtonPressed(manuals_keys[manual]) then
+            manuals_values[manual] = not manuals_values[manual]
+
+            --if manual active then disable other manuals
+            if manuals_values[manual] then
+                for i = 1, #manuals_values, 1 do
+                    if i ~= manual then
+                        manuals_values[i] = false
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function calculateManualYaw()
+    if getValue(anti_aim_other_ui.legit_anti_aim) or not isManualActive()[1] then
+        manual_yaw = 0
+    else
+        manual_yaw = manual_yaw_values[isManualActive()[2]]
+    end
+end 
+
+local function legitAntiAims()
+    legit_yaw = getValue(anti_aim_other_ui.legit_anti_aim) and 180 or 0
+end
+
+local function controleAntiAimStates()
+    if getValue(anti_aim_other_ui.legit_anti_aim) and not isManualActive()[1] then
+        setValue("rbot.antiaim.advanced.pitch", 0)
+        setValue("rbot.antiaim.advanced.autodir.targets", false)
+        setValue("rbot.antiaim.advanced.autodir.edges", false)
+    elseif not getValue(anti_aim_other_ui.legit_anti_aim) and isManualActive()[1] then
+        setValue("rbot.antiaim.advanced.pitch", 1)
+        setValue("rbot.antiaim.advanced.autodir.targets", false)
+        setValue("rbot.antiaim.advanced.autodir.edges", false)
+    elseif not getValue(anti_aim_other_ui.legit_anti_aim) and not isManualActive()[1] then
+        setValue("rbot.antiaim.advanced.pitch", 1)
+        setValue("rbot.antiaim.advanced.autodir.targets", getValue(anti_aim_other_ui.at_targets))
+        setValue("rbot.antiaim.advanced.autodir.edges",  getValue(anti_aim_other_ui.at_edges))
+    end
+end
+
+local function callManualsFunctions()
+    manualAntiAims();
+    calculateManualYaw();
+    legitAntiAims();
+    controleAntiAimStates();
+end
+--@endregion
+
+
+--@region MAIN_YAW 
+local main_yaw = 0;
+
+local function calculateMainYaw()
+    if advanced_mode_enabled then
+        main_yaw = desync_inverted and getValue(anti_aim_elements[getAntiAimCondition()].yaw_angle_right) or getValue(anti_aim_elements[getAntiAimCondition()].yaw_angle_left)
+    else
+        main_yaw = desync_inverted and getValue(anti_aim_simple_settings_ui.yaw_angle) or -getValue(anti_aim_simple_settings_ui.yaw_angle)
+    end
+end
+--@endregion
+
+
+--@region DESYNC_TYPE
+local function getDesyncType()
+    return ((getValue(anti_aim_elements[getAntiAimCondition()].desync_type) == 0 and advanced_mode_enabled) or (getValue(anti_aim_simple_settings_ui.desync_type) == 0 and not advanced_mode_enabled)) and " Desync" or " Desync Jitter"
+end
+--@endregion 
+
+
+--@region SIMPLE_JITTER
+local jitter_angle_simple = 0;
+
+local function simpleJitter()
+    if not advanced_mode_enabled and real_time - static_yaw_time >= (desync_switch_time * TICK_TIME) then
+
+        jitter_angle_simple = (10 * getValue(anti_aim_simple_settings_ui.jitter_angle)) * jitter_side_swapper
+
+        jitter_side_swapper = -jitter_side_swapper   
+        static_yaw_time = real_time
+    end
+end
+--@endregion
+
+
+--@region SET_FINISH_YAW
+local current_jitter_angle = 0;
+
+local function setYaw()
+    if getValue(anti_aim_elements[getAntiAimCondition()].desync_modifier) == 3 then
+        jitter_yaw = 0
+    end
+
+    current_jitter_angle = advanced_mode_enabled and jitter_yaw or jitter_angle_simple
+
+    setValue("rbot.antiaim.base", tostring(clampYaw(180 + current_jitter_angle + manual_yaw + legit_yaw + main_yaw)) .. getDesyncType())
+end
+--@endregion
+
+
+--@region DESYNC_MODIFIERS
+local static_desync_time = globals.RealTime();
+local desync_side_swapper = 1;
+
+local desync_angle = 0;
+
+local function staticDesync()
+    if getValue(anti_aim_elements[getAntiAimCondition()].desync_modifier) == 0 or getValue(anti_aim_elements[getAntiAimCondition()].desync_modifier) == 2 then
+        desync_angle = desync_inverted and -getValue(anti_aim_elements[getAntiAimCondition()].desync_range_right) or getValue(anti_aim_elements[getAntiAimCondition()].desync_range_left)
+    end 
+end
+
+local function randomDesync()
+    if getValue(anti_aim_elements[getAntiAimCondition()].desync_modifier) == 1 then
+        if tick_count % 64 == 0 then
+            desync_angle = desync_inverted and -math.random(0, getValue(anti_aim_elements[getAntiAimCondition()].desync_range_right)) or math.random(0, getValue(anti_aim_elements[getAntiAimCondition()].desync_range_left))
+        end
+    end
+end
+
+local function jitterDesync()
+    if getValue(anti_aim_elements[getAntiAimCondition()].desync_modifier) == 2 then
+        if real_time - static_desync_time >= (desync_switch_time * TICK_TIME) then
+            desync_inverted = not desync_inverted
+
+            static_desync_time = real_time
+        end
+    end
+end
+
+local function isolatedJitterDesync()
+    if getValue(anti_aim_elements[getAntiAimCondition()].desync_modifier) == 3 then
+        if real_time - static_desync_time >= (desync_switch_time * TICK_TIME) then
+            desync_angle = desync_side_swapper > 0 and -getValue(anti_aim_elements[getAntiAimCondition()].desync_range_right) or getValue(anti_aim_elements[getAntiAimCondition()].desync_range_left)
+
+            desync_side_swapper = desync_side_swapper * -1
+            static_desync_time = real_time
+        end
+    end
+end
+
+local function callDesyncFunctions()
+    if advanced_mode then
+        staticDesync();
+        jitterDesync();
+        isolatedJitterDesync();
+        randomDesync()
+    end
+end
+--@endregion
+
+
+--@region SIMPLE_DESYNC
+local desync_angle_simple = 0;
+
+local function simpleDesync()
+    if not advanced_mode_enabled then
+        desync_angle_simple = desync_inverted and -math.floor(9.68 * getValue(anti_aim_simple_settings_ui.desync_angle)) or math.floor(9.68 * getValue(anti_aim_simple_settings_ui.desync_angle))
+    end
+end
+--@endregion
+
+
+--@region SET_FINISH_DESYNC
+local function setDesync()
+    setValue("rbot.antiaim.base.rotation", advanced_mode_enabled and desync_angle or desync_angle_simple)
+end
+--@endregion
+
+
+--@region OTHER_FEATURES
+local function disableLbyOnExploits()
+    if getValue(anti_aim_other_ui.disable_lby_on_exploits) then
+        setValue("rbot.antiaim.advanced.antialign", isDoubleTapActive() and 1 or 0)
+    end
+end
+
+local function lbyRandomizer()
+    if getValue(anti_aim_other_ui.lby_randomizer) and tick_count % 128 == 0 then
+        setValue("rbot.antiaim.base.lby", desync_inverted and math.random(50, 160) or math.random(-160, -50))
+    end
+end
+--@endregion
+
+
+--@region CALLBACKS
+callbacks.Register("CreateMove", function()
+    --yaw modifiers
+    callJitterFunctions()
+    calculateMainYaw()
+    simpleJitter()
+
+    setYaw()
+
+    --desync modifiers
+    callDesyncFunctions()
+    simpleDesync()
+
+    setDesync()
+
+    --other
+    disableLbyOnExploits()
+    lbyRandomizer()
+end)
+
+callbacks.Register("Draw", function()
+    --gui
+    createAntiAimGui()
+    changeGui()
+    
+    --handlers
+    handlers()
+
+    --general
+    invertDesync()
+
+    --yaw modifiers
+    callManualsFunctions()
+end)
+--@endregion
+
+
+--@region ANTI_AIM_PRESETS
+--__________anti-aim presets___________--
+local advanced_preset = gui.Button(anti_aim_presets_tab, "Advanced Preset", function()
+    advanced_mode:SetValue(true)
+
+    --standing
+    setValue(anti_aim_elements[2].override_condition, true)
+    --desync
+    setValue(anti_aim_elements[2].desync_type, 0)
+    setValue(anti_aim_elements[2].desync_modifier, 0)
+    setValue(anti_aim_elements[2].desync_range_right, 58)
+    setValue(anti_aim_elements[2].desync_range_left, 58)
+    --yaw
+    setValue(anti_aim_elements[2].yaw_angle_right, -3)
+    setValue(anti_aim_elements[2].yaw_angle_left, 3)
+    setValue(anti_aim_elements[2].yaw_modifier, 6)
+    setValue(anti_aim_elements[2].yaw_modifier_range, 0)
+    setValue(anti_aim_elements[2].yaw_modifier_speed, 23)
+
+    --ducking
+    setValue(anti_aim_elements[3].override_condition, true)
+    --desync
+    setValue(anti_aim_elements[3].desync_type, 0)
+    setValue(anti_aim_elements[3].desync_modifier, 0)
+    setValue(anti_aim_elements[3].desync_range_right, 53)
+    setValue(anti_aim_elements[3].desync_range_left, 56)
+    --yaw
+    setValue(anti_aim_elements[3].yaw_angle_right, 0)
+    setValue(anti_aim_elements[3].yaw_angle_left, 0)
+    setValue(anti_aim_elements[3].yaw_modifier, 4)
+    setValue(anti_aim_elements[3].yaw_modifier_range, 12)
+    setValue(anti_aim_elements[3].yaw_modifier_speed, 2)
+
+    --slow walking
+    setValue(anti_aim_elements[4].override_condition, true)
+    --desync
+    setValue(anti_aim_elements[4].desync_type, 1)
+    setValue(anti_aim_elements[4].desync_modifier, 0)
+    setValue(anti_aim_elements[4].desync_range_right, 14)
+    setValue(anti_aim_elements[4].desync_range_left, 16)
+    --yaw
+    setValue(anti_aim_elements[4].yaw_angle_right, -4)
+    setValue(anti_aim_elements[4].yaw_angle_left, 6)
+    setValue(anti_aim_elements[4].yaw_modifier, 0)
+    setValue(anti_aim_elements[4].yaw_modifier_range, 0)
+    setValue(anti_aim_elements[4].yaw_modifier_speed, 2)
+
+    --moving
+    setValue(anti_aim_elements[5].override_condition, true)
+    --desync
+    setValue(anti_aim_elements[5].desync_type, 1)
+    setValue(anti_aim_elements[5].desync_modifier, 0)
+    setValue(anti_aim_elements[5].desync_range_right, 10)
+    setValue(anti_aim_elements[5].desync_range_left, 11)
+    --yaw
+    setValue(anti_aim_elements[5].yaw_angle_right, -2)
+    setValue(anti_aim_elements[5].yaw_angle_left, 2)
+    setValue(anti_aim_elements[5].yaw_modifier, 3)
+    setValue(anti_aim_elements[5].yaw_modifier_range, 6)
+    setValue(anti_aim_elements[5].yaw_modifier_speed, 2)
+
+    --air
+    setValue(anti_aim_elements[6].override_condition, true)
+    --desync
+    setValue(anti_aim_elements[6].desync_type, 0)
+    setValue(anti_aim_elements[6].desync_modifier, 3)
+    setValue(anti_aim_elements[6].desync_range_right, 57)
+    setValue(anti_aim_elements[6].desync_range_left, 58)
+    --yaw
+    setValue(anti_aim_elements[6].yaw_angle_right, -1)
+    setValue(anti_aim_elements[6].yaw_angle_left, 3)
+    setValue(anti_aim_elements[6].yaw_modifier, 0)
+    setValue(anti_aim_elements[6].yaw_modifier_range, 0)
+    setValue(anti_aim_elements[6].yaw_modifier_speed, 2)
+end)
+
+local simple_preset = gui.Button(anti_aim_presets_tab, "Simple Preset", function()
+    advanced_mode:SetValue(false)
+    
+    setValue(anti_aim_simple_settings_ui.desync_type, 0)
+    setValue(anti_aim_simple_settings_ui.desync_angle, 6)
+    setValue(anti_aim_simple_settings_ui.jitter_angle, 2)
+    setValue(anti_aim_simple_settings_ui.yaw_angle, 7)
+end)
+--_____________________________________--
+--@endregion
