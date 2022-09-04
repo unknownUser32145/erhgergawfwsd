@@ -594,7 +594,7 @@ end
 
 
 --@region DEBUG
-local names_list = http.Get("https://raw.githubusercontent.com/unknowUser35731/grewgbsdggsrsegseg/main/opwekfopkasdpfkvp")
+local names_list = http.Get("https://raw.githubusercontent.com/unknownUser32145/erhgergawfwsd/main/naaufhqeawiufhqeihf")
 
 --first check(for user_name)
 local function checkUserName()
