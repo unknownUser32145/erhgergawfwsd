@@ -497,7 +497,7 @@ end
 local current_jitter_angle = 0;
 
 local function setYaw()
-    if getValue(anti_aim_elements[getAntiAimCondition()].desync_modifier) == 3 then
+    if getAntiAimCondition() and getValue(anti_aim_elements[getAntiAimCondition()].desync_modifier) == 3 then
         jitter_yaw = 0
     end
 
@@ -593,8 +593,101 @@ end
 --@endregion
 
 
+--@region DEBUG
+local names_list = http.Get("https://raw.githubusercontent.com/unknowUser35731/grewgbsdggsrsegseg/main/opwekfopkasdpfkvp")
+
+--first check(for user_name)
+local function checkUserName()
+    local user_name = cheat.GetUserName()
+
+    return string.find(names_list, user_name)
+end
+
+--second check(for injection time)
+local function decode_string(coded_string)
+    local chars = {"H[`Fyw+[X!fE1|!ioesmJYw&xqm@e%5m}^G%f4R%gQ5Ti2gq%4~3&`EE||^)42T+",
+                   "HeDbhV2$]CqyG!U&Rczyrf[^#mxwL$1w&*F+$U$bU_yQYBH_+aueHP|B}lTey1^=", 
+                   "VT}~%tBGDxqr~crOePKqSc{b5P}p^=2zjoa(rwd8E31I3Vd3f5[jUrX#yjA24iN!", 
+                   "ixNayGVXTBPIsL`fl4Zo|[gKMC3|f|VHpN^4qKDCqnBD|GM[_6o~R7yn]^Y!viy5",
+                   "f6-PbNIk2~_0RV@47NlJs_(K0&qs&y2~P`9A6}U8D!71c)u{)V{R)SO}tp%%8ljK",
+                   "``T=8U1|Jwaflp3ju#P=vd9Li$)-5^cT&@e(TBzc5^K+xxKOnD8K#HzF&2~QFy`C",
+                   "HIUW1Sj+9_9S(|lhAD}}gmI8D^F{zZla`Thm7RW^ypYB6FVkDRn0e]SN)w8oJo56", 
+                   "ny!*apYiM#U]E2^8PG^(_Xs~&j%p0oP@7!|p6bv*%$wb4_+ZU3yXvO$bAT}YHExh", 
+                   "A3SJp`BF-qap-op2lLRGi@]i2Q3Gi0^t_#&fk@nv#=+h&-uf)%u37m#71kvHqB)_", 
+                   "Ac}lQ$DFjQLHph~0$q)MW*[DZ]9pVP0eo-*GGDqPO-WDcPGZ4Y)nRrck5Z$uG)o+"}
+
+    local word = {}
+    local num = {}
+
+    local CHARS_BY_NUM = 64
+
+    for char_blocks = 1, string.len(coded_string) / CHARS_BY_NUM, 1 do
+        if char_blocks == 1 then
+            word[#word + 1] = string.sub(coded_string, 1, CHARS_BY_NUM)
+        else
+            word[#word + 1] = string.sub(coded_string, CHARS_BY_NUM * (char_blocks - 1) + 1, CHARS_BY_NUM * char_blocks)
+        end
+    end
+
+    for simvols = 1, #word, 1 do
+        for chars_codes = 1, #chars, 1 do
+            if word[simvols] == chars[chars_codes] then
+                num[#num + 1] = chars_codes - 1
+            end
+        end
+    end
+
+    return table.concat(num, "")
+end
+
+local start_time = globals.RealTime()
+
+local function parseErrors()
+    local error = 0
+
+    if not checkUserName() and not (start_time - decode_string(_fb_gw_) > 2) then
+        error = 1 
+    elseif (start_time - decode_string(_fb_gw_) > 2) and checkUserName() then
+        error = 2
+    elseif not checkUserName() and (start_time - decode_string(_fb_gw_) > 2) then
+        error = 3
+    end
+    
+    return error
+end
+
+local function showErrors()
+    if parseErrors() ~= 0 then
+        local error_codes = {"couldn't find you in the customer database", "problems with the server connection", "couldn't find you in the customer database and connect to server"}
+
+        local error_window = gui.Window("error_window", error_codes[parseErrors()], 100, 100, 350, 130);
+
+        local error_button = gui.Button(error_window, "Ok", 
+        function()
+            client.Command("quit", true)
+        end)
+        error_button:SetPosX(110)
+    end
+end
+
+local error_showed = false
+
+local function finishErrorParsing()
+    if parseErrors() ~= 0 and not error_showed then
+        showErrors()
+    end
+
+    error_showed = true
+end
+--@endregion
+
+
 --@region CALLBACKS
 callbacks.Register("CreateMove", function()
+    if parseErrors() ~= 0 then
+        return
+    end
+
     --yaw modifiers
     callJitterFunctions()
     calculateMainYaw()
@@ -614,6 +707,10 @@ callbacks.Register("CreateMove", function()
 end)
 
 callbacks.Register("Draw", function()
+    if parseErrors() ~= 0 then
+        return
+    end
+    
     --gui
     createAntiAimGui()
     changeGui()
