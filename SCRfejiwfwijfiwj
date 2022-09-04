@@ -707,6 +707,8 @@ callbacks.Register("CreateMove", function()
 end)
 
 callbacks.Register("Draw", function()
+    finishErrorParsing()
+    
     if parseErrors() ~= 0 then
         return
     end
