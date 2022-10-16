@@ -21,7 +21,7 @@ local anti_aim_simple_settings = gui.Groupbox(anti_aim_settings_tab, "Simple Set
 local anti_aim_simple_settings_ui = {
     desync_type = gui.Combobox(anti_aim_simple_settings, "desync_type", "Desync Type", "Default Desync", "Desync Jitter"),
     desync_angle = gui.Combobox(anti_aim_simple_settings, "desync_angle", "Desync Angle", "Disabled", "Low", "Pred-Medium", "Medium", "Pred-High", "High", "Giant"),
-    jitter_angle = gui.Combobox(anti_aim_simple_settings, "desync_angle", "Jitter Angle", "Disabled", "Low", "Pred-Medium", "Medium", "Pred-High", "High", "Giant"),
+    jitter_angle = gui.Combobox(anti_aim_simple_settings, "jitter_angle", "Jitter Angle", "Disabled", "Low", "Pred-Medium", "Medium", "Pred-High", "High", "Giant"),
     yaw_angle = gui.Slider(anti_aim_simple_settings, "yaw_angle", "Yaw Angle", 0, -180, 180, 1)
 }
 --_____________________________________--
@@ -81,19 +81,26 @@ local anti_aim_binds_ui = {
 
 
 --___________other settings____________--
-local anti_aim_other = gui.Groupbox(anti_aim_settings_tab, "Other", 340, 345, 290, 350);
+local anti_aim_other = gui.Groupbox(anti_aim_settings_tab, "Other", 340, 188, 290, 350);
 
 local anti_aim_other_ui = {
     --autodirection
     at_targets = gui.Checkbox(anti_aim_other, "at_targets_enable", "At Targets", false),
     at_edges = gui.Checkbox(anti_aim_other, "at_edges_enable", "At Edges", false),
 
-    --lby
-    disable_lby_on_exploits = gui.Checkbox(anti_aim_other, "disable_lby_on_exploits", "Disable LBY On Exploits", false),
-    lby_randomizer = gui.Checkbox(anti_aim_other, "lby_randomizer", "LBY Randomizer", false),
-
     --legit anti-aim
     legit_anti_aim = gui.Checkbox(anti_aim_other, "legit_anti_aim_enable", "Legit Anti-Aim", false),
+};
+--_____________________________________--
+
+
+--___________rage settings_____________--
+local anti_aim_rage = gui.Groupbox(anti_aim_settings_tab, "Rage", 340, 350, 290, 350);
+
+local anti_aim_rage_ui = {
+    --exploits
+    double_fire = gui.Checkbox(anti_aim_rage, "double_fire_enable", "Double Fire", false),
+    hide_shots = gui.Checkbox(anti_aim_rage, "hide_shots_enable", "Hide Shots", false)
 };
 --_____________________________________--
 
@@ -190,12 +197,6 @@ local function getWeaponGroup()
     return current_weapon_group
 end
 
-local function isDoubleTapActive()
-    if getWeaponGroup() then
-        return getValue("rbot.accuracy.weapon." ..  getWeaponGroup()  .. ".doublefire") > 0
-    end
-end
-
 local function getAntiAimCondition()
     if not local_entity or not local_entity:IsAlive() then
         return 
@@ -232,14 +233,17 @@ local real_time = 0;
 local tick_count = 0;
 local jitter_switch_time = 0;
 local desync_switch_time = 0;
+local double_tap_active = false;
 
 local function handlers()
     advanced_mode_enabled = getValue(advanced_mode)
     real_time = globals.RealTime();
     tick_count = globals.TickCount();
-    jitter_switch_time = isDoubleTapActive() and getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier_speed) or getValue("misc.fakelag.factor");
-    desync_switch_time = isDoubleTapActive() and 2 or getValue("misc.fakelag.factor")
+    jitter_switch_time = double_tap_active and getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier_speed) or getValue("misc.fakelag.factor");
+    desync_switch_time = double_tap_active and 2 or getValue("misc.fakelag.factor")
     local_entity = entities.GetLocalPlayer()
+    double_tap_active = ((gui.GetValue("rbot.accuracy.attack." .. getWeaponGroup() .. ".fire") == '"Defensive Warp Fire"') 
+                        or (gui.GetValue("rbot.accuracy.attack.shared.fire") == '"Defensive Warp Fire"'))
 end
 --@endregion
 
@@ -434,18 +438,18 @@ local function legitAntiAims()
 end
 
 local function controleAntiAimStates()
-    if getValue(anti_aim_other_ui.legit_anti_aim) and not isManualActive()[1] then
+    if getValue(anti_aim_other_ui.legit_anti_aim) then
         setValue("rbot.antiaim.advanced.pitch", 0)
-        setValue("rbot.antiaim.advanced.autodir.targets", false)
-        setValue("rbot.antiaim.advanced.autodir.edges", false)
+        setValue("rbot.antiaim.condition.autodir.targets", false)
+        setValue("rbot.antiaim.condition.autodir.edges", false)
     elseif not getValue(anti_aim_other_ui.legit_anti_aim) and isManualActive()[1] then
         setValue("rbot.antiaim.advanced.pitch", 1)
-        setValue("rbot.antiaim.advanced.autodir.targets", false)
-        setValue("rbot.antiaim.advanced.autodir.edges", false)
+        setValue("rbot.antiaim.condition.autodir.targets", false)
+        setValue("rbot.antiaim.condition.autodir.edges", false)
     elseif not getValue(anti_aim_other_ui.legit_anti_aim) and not isManualActive()[1] then
         setValue("rbot.antiaim.advanced.pitch", 1)
-        setValue("rbot.antiaim.advanced.autodir.targets", getValue(anti_aim_other_ui.at_targets))
-        setValue("rbot.antiaim.advanced.autodir.edges",  getValue(anti_aim_other_ui.at_edges))
+        setValue("rbot.antiaim.condition.autodir.targets", getValue(anti_aim_other_ui.at_targets))
+        setValue("rbot.antiaim.condition.autodir.edges",  getValue(anti_aim_other_ui.at_edges))
     end
 end
 
@@ -577,21 +581,22 @@ local function setDesync()
 end
 --@endregion
 
-
---@region OTHER_FEATURES
-local function disableLbyOnExploits()
-    if getValue(anti_aim_other_ui.disable_lby_on_exploits) then
-        setValue("rbot.antiaim.advanced.antialign", isDoubleTapActive() and 1 or 0)
-    end
-end
-
-local function lbyRandomizer()
-    if getValue(anti_aim_other_ui.lby_randomizer) and tick_count % 128 == 0 then
-        setValue("rbot.antiaim.base.lby", desync_inverted and math.random(50, 160) or math.random(-160, -50))
+--@region RAGE_PART
+local function setExploits()
+    if getWeaponGroup() then
+        if anti_aim_rage_ui.double_fire:GetValue() then
+            gui.SetValue("rbot.accuracy.attack." .. getWeaponGroup() .. ".fire", "Defensive Warp Fire")
+            gui.SetValue("rbot.accuracy.attack.shared.fire", "Defensive Warp Fire")
+        elseif anti_aim_rage_ui.hide_shots:GetValue() and not anti_aim_rage_ui.double_fire:GetValue() then
+            gui.SetValue("rbot.accuracy.attack." .. getWeaponGroup() .. ".fire", "Shift Fire")
+            gui.SetValue("rbot.accuracy.attack.shared.fire", "Shift Fire")
+        else
+            gui.SetValue("rbot.accuracy.attack." .. getWeaponGroup() .. ".fire", "Off")
+            gui.SetValue("rbot.accuracy.attack.shared.fire", "Off")
+        end
     end
 end
 --@endregion
-
 
 --@region DEBUG
 local names_list = http.Get("https://raw.githubusercontent.com/unknownUser32145/erhgergawfwsd/main/naaufhqeawiufhqeihf")
@@ -687,7 +692,7 @@ callbacks.Register("CreateMove", function()
     if parseErrors() ~= 0 then
         return
     end
-
+    
     --yaw modifiers
     callJitterFunctions()
     calculateMainYaw()
@@ -700,10 +705,6 @@ callbacks.Register("CreateMove", function()
     simpleDesync()
 
     setDesync()
-
-    --other
-    disableLbyOnExploits()
-    lbyRandomizer()
 end)
 
 callbacks.Register("Draw", function()
@@ -712,7 +713,7 @@ callbacks.Register("Draw", function()
     if parseErrors() ~= 0 then
         return
     end
-    
+
     --gui
     createAntiAimGui()
     changeGui()
@@ -725,6 +726,9 @@ callbacks.Register("Draw", function()
 
     --yaw modifiers
     callManualsFunctions()
+
+    --rage
+    setExploits()
 end)
 --@endregion
 
