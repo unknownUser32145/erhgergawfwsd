@@ -236,14 +236,14 @@ local desync_switch_time = 0;
 local double_tap_active = false;
 
 local function handlers()
+    double_tap_active = ((gui.GetValue("rbot.accuracy.attack." .. getWeaponGroup() .. ".fire") == '"Defensive Warp Fire"') 
+                        or (gui.GetValue("rbot.accuracy.attack.shared.fire") == '"Defensive Warp Fire"'))
     advanced_mode_enabled = getValue(advanced_mode)
     real_time = globals.RealTime();
     tick_count = globals.TickCount();
     jitter_switch_time = double_tap_active and getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier_speed) or getValue("misc.fakelag.factor");
     desync_switch_time = double_tap_active and 2 or getValue("misc.fakelag.factor")
     local_entity = entities.GetLocalPlayer()
-    double_tap_active = ((gui.GetValue("rbot.accuracy.attack." .. getWeaponGroup() .. ".fire") == '"Defensive Warp Fire"') 
-                        or (gui.GetValue("rbot.accuracy.attack.shared.fire") == '"Defensive Warp Fire"'))
 end
 --@endregion
 
