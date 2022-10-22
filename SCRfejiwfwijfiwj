@@ -699,18 +699,20 @@ callbacks.Register("CreateMove", function()
         return
     end
     
-    --yaw modifiers
-    callJitterFunctions()
-    calculateMainYaw()
-    simpleJitter()
+    if anti_aim_elements[1] then
+        --yaw modifiers
+        callJitterFunctions()
+        calculateMainYaw()
+        simpleJitter()
 
-    setYaw()
+        setYaw()
 
-    --desync modifiers
-    callDesyncFunctions()
-    simpleDesync()
+        --desync modifiers
+        callDesyncFunctions()
+        simpleDesync()
 
-    setDesync()
+        setDesync()
+    end
 end)
 
 callbacks.Register("Draw", function()
