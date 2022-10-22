@@ -177,16 +177,15 @@ local local_entity;
 
 local function getWeaponGroup()
     if not local_entity or not local_entity:IsAlive() then
-        return 
+        return "shared"
     end
 
     --get current weapon group
     local current_weapon_group = "shared"
+    local local_weapon_id = local_entity:GetWeaponID()
 
     for group_name, group_weapons in pairs(WEAPON_GROUP) do
         for weapon_id = 1, #group_weapons, 1 do
-
-            local local_weapon_id = local_entity:GetWeaponID()
 
             if local_weapon_id == group_weapons[weapon_id] then
                 current_weapon_group = group_name
@@ -199,7 +198,7 @@ end
 
 local function getAntiAimCondition()
     if not local_entity or not local_entity:IsAlive() then
-        return 
+        return 1
     end
 
     --watching for m_flags
@@ -236,14 +235,19 @@ local desync_switch_time = 0;
 local double_tap_active = false;
 
 local function handlers()
+    local_entity = entities.GetLocalPlayer()
+
     double_tap_active = ((gui.GetValue("rbot.accuracy.attack." .. getWeaponGroup() .. ".fire") == '"Defensive Warp Fire"') 
                         or (gui.GetValue("rbot.accuracy.attack.shared.fire") == '"Defensive Warp Fire"'))
-    advanced_mode_enabled = getValue(advanced_mode)
+
+    --time 
     real_time = globals.RealTime();
     tick_count = globals.TickCount();
+
+    --anti-aims
+    advanced_mode_enabled = getValue(advanced_mode)
     jitter_switch_time = double_tap_active and getValue(anti_aim_elements[getAntiAimCondition()].yaw_modifier_speed) or getValue("misc.fakelag.factor");
     desync_switch_time = double_tap_active and 2 or getValue("misc.fakelag.factor")
-    local_entity = entities.GetLocalPlayer()
 end
 --@endregion
 
@@ -581,6 +585,7 @@ local function setDesync()
 end
 --@endregion
 
+
 --@region RAGE_PART
 local function setExploits()
     if getWeaponGroup() then
@@ -597,6 +602,7 @@ local function setExploits()
     end
 end
 --@endregion
+
 
 --@region DEBUG
 local names_list = http.Get("https://raw.githubusercontent.com/unknownUser32145/erhgergawfwsd/main/naaufhqeawiufhqeihf")
